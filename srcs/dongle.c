@@ -6,7 +6,7 @@
 /*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:39:36 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/23 00:28:31 by alikhaled18      ###   ########.fr       */
+/*   Updated: 2026/11/23 07:42:52 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,7 +98,7 @@ void	release_dongles(t_coder *coder)
 {
 	long	now;
 
-	now = get_current_time_ms() - coder->sim->start_time;
+	now = get_current_time_ms() - coder->sim->start_time; // May can I make another function for time now
 	pthread_mutex_lock(&coder->left->lock);
 	coder->left->is_available = 1;
 	coder->left->last_release_time = now;
