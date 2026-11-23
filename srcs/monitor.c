@@ -6,7 +6,7 @@
 /*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:40:42 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/23 01:05:12 by alikhaled18      ###   ########.fr       */
+/*   Updated: 2026/11/23 07:54:15 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ static void	check_coder(t_sim *sim, int i)
 	since_compile = now - sim->coders[i].last_compile_start;
 	if (since_compile > sim->time_to_burnout)	// why not ">=" ?
 	{
-		log_message(sim, sim->coders[i].number, "has burned out");
+		log_message(sim, sim->coders[i].number, "has burned out"); // it should be "burned out".
 		sim->stop = 1;
 		wake_everyone(sim);
 	}
