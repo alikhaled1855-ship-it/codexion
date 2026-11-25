@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   monitor.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
+/*   By: alsaleh <alsaleh@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/01 22:40:42 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/25 04:23:49 by alikhaled18      ###   ########.fr       */
+/*   Created: 2026/09/01 22:40:42 by alsaleh           #+#    #+#             */
+/*   Updated: 2026/11/25 11:13:23 by alsaleh          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ static void	check_coder(t_sim *sim, int i)
 	long	since_compile;
 
 	if (is_done(sim, i))
-	return ;
+		return ;
 	now = get_current_time_ms() - sim->start_time;
 	pthread_mutex_lock(&sim->coders[i].time_lock);
 	since_compile = now - sim->coders[i].last_compile_start;

@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: alsaleh <alsaleh@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/01 22:39:36 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/25 10:22:30 by alsaleh          ###   ########.fr       */
+/*   Created: 2026/09/01 22:39:36 by alsaleh           #+#    #+#             */
+/*   Updated: 2026/11/25 11:12:54 by alsaleh          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,12 @@ static int	acquire_one_dongle(t_dongle *dongle, t_coder *coder, long key)
 	return (1);
 }
 
-static void	order_dongles(t_coder *coder, t_dongle **first, t_dongle **second, long *key)
+static void	order_dongles(t_coder *coder, t_dongle **first,
+	t_dongle **second, long *key)
 {
-	t_sim *sim;
+	t_sim	*sim;
 
-	sim = coder->sim;	
+	sim = coder->sim;
 	if (coder->left < coder->right)
 	{
 		*first = coder->left;

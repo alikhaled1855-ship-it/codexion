@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   codexion.h                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
+/*   By: alsaleh <alsaleh@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/29 15:51:51 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/25 03:50:17 by alikhaled18      ###   ########.fr       */
+/*   Created: 2026/07/29 15:51:51 by alsaleh           #+#    #+#             */
+/*   Updated: 2026/11/25 11:13:43 by alsaleh          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,12 @@
 # define CODEXION_H
 
 # include <pthread.h>
-#include <stddef.h>
-#include <sys/time.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdio.h>
+# include <stddef.h>
+# include <sys/time.h>
+# include <stdlib.h>
+# include <string.h>
+# include <unistd.h>
+# include <stdio.h>
 
 typedef struct s_coder	t_coder;
 

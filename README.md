@@ -4,90 +4,166 @@
 
 ## Description
 
-Codexion is a C implementation of the classic Dining Philosophers problem, reframed
-around coders sharing dongles. Coders sit in a circle; each shares a dongle with each
-neighbor. To compile, a coder needs both their left and right dongle at the same time.
-Between compiles, coders debug and refactor (no dongles needed). If a coder goes too
-long without starting a new compile, they burn out and the simulation stops.
+Codexion is a C implementation of the classic Dining Philosophers problem, reimagined around coders sharing USB dongles.
 
-The goal of the project is to safely share limited resources (dongles) between many
-concurrent threads (coders), without deadlock, without starvation, and with precise,
-race-free timing and logging — using a custom-built priority queue (min-heap) to
-arbitrate access, according to either a FIFO or EDF (Earliest Deadline First) policy.
+Coders sit in a circle, and each coder shares a dongle with each neighbor. To compile, a coder needs both their left and right dongles at the same time.
+
+Between compiles, coders debug and refactor without needing dongles. If a coder goes too long without starting a new compile, they burn out and the simulation stops.
+
+The goal of this project is to manage shared resources safely between multiple concurrent threads using POSIX threads, mutexes, condition variables, and a custom-built priority queue (min-heap).
+
+The program supports two scheduling policies: FIFO (First In, First Out) and EDF (Earliest Deadline First).
+
+It aims to prevent deadlocks and starvation while handling cooldown periods, precise timing, and thread-safe logging.
 
 ## Instructions
 
-Build:
-```
+### Compilation
+
+To compile the project, run:
+
+```bash
 make
 ```
 
-Run:
-```
+### Execution
+
+Run the program with the following arguments:
+
+```bash
 ./codexion number_of_coders time_to_burnout time_to_compile time_to_debug \
-  time_to_refactor number_of_compiles_required dongle_cooldown scheduler
+time_to_refactor number_of_compiles_required dongle_cooldown scheduler
 ```
 
-- All numeric arguments must be positive integers (milliseconds, except
-  `number_of_coders` and `number_of_compiles_required`, which are counts).
+All arguments are mandatory.
+
+- All numeric arguments must be positive integers.
+- All time values are expressed in milliseconds.
+- `number_of_coders` and `number_of_compiles_required` represent counts.
 - `scheduler` must be exactly `fifo` or `edf`.
 
-Example:
-```
+### Example
+
+```bash
 ./codexion 5 800 200 100 150 3 100 fifo
 ```
 
-Other Makefile rules: `make clean`, `make fclean`, `make re`.
+### Makefile rules
+
+```bash
+make
+make clean
+make fclean
+make re
+```
 
 ## Blocking cases handled
 
-- **Deadlock prevention (Coffman's conditions):** each coder needs two dongles at
-  once, which is the classic setup for circular-wait deadlock. Codexion breaks this by
-  always acquiring dongles in a fixed, consistent order (by memory address, not by
-  "left/right"), for every coder. This means no two neighboring coders can ever each
-  hold one dongle while waiting on the other, eliminating circular wait entirely.
-- **Starvation prevention:** dongle access is arbitrated by a custom min-heap per
-  dongle, ordered by arrival time (FIFO) or burnout deadline (EDF), with a
-  deterministic tie-break. No coder can be indefinitely skipped in favor of another.
-- **Cooldown handling:** each dongle records its last release time; a coder acquiring
-  a dongle waits out any remaining cooldown before it is marked taken again.
-- **Precise burnout detection:** a dedicated monitor thread polls every 5ms,
-  comparing each coder's time since their last compile start against
-  `time_to_burnout`, guaranteeing detection well within the required 10ms window.
-- **Log serialization:** all output goes through a single mutex-protected logging
-  function, so concurrent log lines from different threads are never interleaved.
+### Deadlock prevention (Coffman's conditions)
+
+Each coder needs two dongles simultaneously. This creates the possibility of circular-wait deadlock.
+
+Codexion prevents this by acquiring dongles in a fixed order based on their memory addresses, rather than their left/right positions.
+
+Using the same acquisition order prevents circular wait between coders.
+
+### Starvation prevention
+
+Dongle access is managed using a custom min-heap for each dongle.
+
+Requests are ordered according to the selected scheduling policy:
+
+- **FIFO:** Requests are served in arrival order.
+- **EDF:** Requests are ordered by their burnout deadlines.
+
+A deterministic tie-breaker is used when deadlines are equal.
+
+The scheduling mechanism is designed to provide fair access and prevent starvation under feasible simulation parameters.
+
+### Cooldown handling
+
+Each dongle records its last release time.
+
+After a dongle is released, it remains unavailable until its cooldown period has elapsed.
+
+A coder must wait until the cooldown expires before acquiring that dongle.
+
+### Precise burnout detection
+
+A dedicated monitor thread checks whether any coder has exceeded their allowed time without starting a new compile.
+
+The monitor checks every 5 milliseconds and stops the simulation when burnout is detected.
+
+This polling interval helps the program meet the required 10ms burnout logging window.
+
+### Log serialization
+
+All output is handled by a single mutex-protected logging function.
+
+The print mutex ensures that messages from different threads do not get mixed together.
 
 ## Thread synchronization mechanisms
 
-- **`pthread_mutex_t`** protects every piece of shared state: each dongle's
-  availability/cooldown/waiting-heap (its own mutex, so unrelated dongles never
-  block each other), the shared print lock (serializes all logging), and implicitly
-  the `stop` flag's use around dongle state changes. Every read or write of shared
-  data happens only while holding the relevant mutex, preventing races such as two
-  coders both believing they've acquired the same free dongle.
-- **`pthread_cond_t`** lets a coder thread sleep while waiting for a dongle instead
-  of busy-waiting. A coder pushes itself onto the dongle's heap and calls
-  `pthread_cond_wait`, which atomically releases the mutex while asleep and
-  re-acquires it on wake. On release, the holder calls `pthread_cond_broadcast`,
-  waking all waiters, each of which re-checks (in a `while` loop, not `if`) whether
-  it is genuinely free AND at the top of the heap before proceeding — this is what
-  lets many coders share one condition variable safely and correctly.
-- **Monitor–coder communication:** the shared `stop` flag, always read/written under
-  a dongle's lock when relevant, is how the monitor signals every coder to shut
-  down. Since some coders may be asleep on a condition variable, the monitor
-  broadcasts on every dongle's `cond` after setting `stop`, guaranteeing every
-  sleeping thread wakes up, re-checks `stop`, and exits cleanly instead of hanging.
+### pthread_mutex_t
+
+Mutexes protect shared resources and prevent multiple threads from modifying the same data simultaneously.
+
+Codexion uses mutexes to protect:
+
+- Each dongle's availability, cooldown information, and waiting heap.
+- The logging output.
+- Shared simulation state.
+
+This prevents race conditions, such as two coders acquiring the same dongle simultaneously.
+
+### pthread_cond_t
+
+Condition variables allow coder threads to wait for dongles without continuously checking their availability.
+
+When a coder requests a dongle, it joins the dongle's waiting heap and waits using `pthread_cond_wait`.
+
+When a dongle is released, `pthread_cond_broadcast` wakes the waiting threads.
+
+Each awakened thread checks again whether the dongle is available and whether its request has priority in the heap before proceeding.
+
+The checks are performed inside a `while` loop to handle spurious wakeups and ensure correct synchronization.
+
+### Thread communication and event signaling
+
+The monitor thread communicates simulation termination through the shared `stop` flag.
+
+When burnout is detected, the monitor updates the simulation state and broadcasts on the dongles' condition variables.
+
+This wakes sleeping coder threads so they can check the termination state and exit cleanly.
+
+Condition-variable signaling is used to coordinate waiting threads and notify them about changes in dongle availability or simulation termination.
 
 ## Resources
 
-- 42 Subject: Dining Philosophers (original problem this project is based on)
-- `man pthread_create`, `man pthread_mutex_lock`, `man pthread_cond_wait`
-- Wikipedia: Dining philosophers problem, Coffman conditions, Earliest Deadline First
-- **AI usage:** Claude (Anthropic) was used throughout as a learning tool, not a code
-  generator. It explained concepts (threads, mutexes, condition variables, deadlock/
-  starvation, binary heaps, EDF scheduling) before any code was written, and guided
-  incremental implementation of every file, with the author writing/testing/running
-  each piece and confirming understanding before moving on. It was also used to help
-  identify and fix a real race condition found during stress testing (a cooldown
-  check that briefly released a lock at the wrong point), and to identify norminette
-  violations and restructure functions to comply with them.
+- 42 Codexion Subject.
+- `man pthread_create`
+- `man pthread_mutex_lock`
+- `man pthread_mutex_unlock`
+- `man pthread_cond_wait`
+- `man pthread_cond_broadcast`
+- Wikipedia: Dining Philosophers Problem.
+- Wikipedia: Coffman Conditions.
+- Wikipedia: Earliest Deadline First (EDF).
+
+### AI usage
+
+Claude (Anthropic) was used throughout the project as a learning tool, not as a code generator.
+
+It helped explain important concepts before implementation, including:
+
+- Threads and mutexes.
+- Condition variables.
+- Deadlocks and starvation.
+- Binary heaps and priority queues.
+- EDF scheduling.
+
+AI also helped guide the incremental implementation of the project. The author wrote, tested, and ran each part while making sure to understand the implementation before moving forward.
+
+During stress testing, AI helped identify and fix a race condition related to cooldown handling, where a lock was briefly released at the wrong point.
+
+It was also used to identify Norminette violations and help restructure functions to comply with the 42 Norm.

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
+/*   By: alsaleh <alsaleh@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/09/01 22:40:12 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/25 03:50:12 by alikhaled18      ###   ########.fr       */
+/*   Created: 2026/09/01 22:40:12 by alsaleh           #+#    #+#             */
+/*   Updated: 2026/11/25 11:13:18 by alsaleh          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,6 @@ int	main(int argc, char **argv)
 	pthread_join(sim.monitor_thread, NULL);
 	join_coders(&sim);
 	sim.stop = 1;
-	// pthread_join(sim.monitor_thread, NULL);
 	cleanup_sim(&sim);
 	return (0);
 }

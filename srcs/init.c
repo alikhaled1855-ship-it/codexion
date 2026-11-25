@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   init.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
+/*   By: alsaleh <alsaleh@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/29 20:07:49 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/25 04:49:52 by alikhaled18      ###   ########.fr       */
+/*   Created: 2026/07/29 20:07:49 by alsaleh           #+#    #+#             */
+/*   Updated: 2026/11/25 11:13:07 by alsaleh          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,12 +44,12 @@ static int	alloc_arrays(t_sim *sim)
 static int	init_one(t_sim *sim, int i)
 {
 	sim->dongles[i].is_available = 1;
-	sim->dongles[i].last_release_time = -1000000;		// النحاس يستهبل هنا
+	sim->dongles[i].last_release_time = -1000000;
 	pthread_mutex_init(&sim->dongles[i].lock, NULL);
 	pthread_cond_init(&sim->dongles[i].cond, NULL);
 	pthread_mutex_init(&sim->coders[i].time_lock, NULL);
 	if (heap_init(&sim->dongles[i].waiting, sim->number_of_coders))
-	return (1);
+		return (1);
 	sim->coders[i].number = i + 1;
 	sim->coders[i].right = &sim->dongles[i];
 	sim->coders[i].left = &sim->dongles[(i - 1 + sim->number_of_coders)
@@ -57,7 +57,7 @@ static int	init_one(t_sim *sim, int i)
 	sim->coders[i].compiles_done = 0;
 	sim->coders[i].last_compile_start = 0;
 	sim->coders[i].sim = sim;
-	return 0;
+	return (0);
 }
 
 int	init_sim(t_sim *sim, char **argv)
@@ -75,7 +75,7 @@ int	init_sim(t_sim *sim, char **argv)
 		i++;
 	}
 	sim->stop = 0;
-	sim->start_time = get_current_time_ms();	
+	sim->start_time = get_current_time_ms();
 	pthread_mutex_init(&sim->print_lock, NULL);
 	pthread_mutex_init(&sim->state_lock, NULL);
 	return (0);
