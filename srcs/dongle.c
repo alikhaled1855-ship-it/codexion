@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   dongle.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
+/*   By: alsaleh <alsaleh@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:39:36 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/25 04:57:11 by alikhaled18      ###   ########.fr       */
+/*   Updated: 2026/11/25 10:22:30 by alsaleh          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,10 +46,10 @@ static int	acquire_one_dongle(t_dongle *dongle, t_coder *coder, long key)
 	}
 	elapsed = (get_current_time_ms() - sim->start_time)
 		- dongle->last_release_time;
-	if (elapsed < sim->dongle_cooldown)
-		usleep((sim->dongle_cooldown - elapsed) * 1000);
 	dongle->is_available = 0;
 	pthread_mutex_unlock(&dongle->lock);
+	if (elapsed < sim->dongle_cooldown)
+		usleep((sim->dongle_cooldown - elapsed) * 1000);
 	return (1);
 }
 
