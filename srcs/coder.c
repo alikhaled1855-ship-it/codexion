@@ -40,3 +40,16 @@ void	*coder_routine(void *arg)
 	}
 	return (NULL);
 }
+
+int	lone_coder(t_coder *coder)
+{
+	t_sim	*sim;
+
+	sim = coder->sim;
+	log_message(sim, coder->number, "has taken a dongle");
+	pthread_mutex_lock(&sim->dlock);
+	while (!is_stop(sim))
+		pthread_cond_wait(&sim->dcond, &sim->dlock);
+	pthread_mutex_unlock(&sim->dlock);
+	return (0);
+}

@@ -79,6 +79,8 @@ typedef struct s_sim
 	pthread_t			monitor_thread;
 	pthread_mutex_t		print_lock;
 	pthread_mutex_t		state_lock;
+	pthread_mutex_t		dlock;
+	pthread_cond_t		dcond;
 }						t_sim;
 
 int						is_number(char *str, long min);
@@ -96,5 +98,7 @@ void					heap_push(t_heap *heap, t_coder *coder, long key);
 t_coder					*heap_pop(t_heap *heap);
 void					*monitor_routine(void *arg);
 int						is_stop(t_sim *sim);
+long					get_key(t_coder *coder);
+int						lone_coder(t_coder *coder);
 
 #endif

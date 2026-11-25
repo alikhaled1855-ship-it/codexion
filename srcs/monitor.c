@@ -14,16 +14,9 @@
 
 static void	wake_everyone(t_sim *sim)
 {
-	int	j;
-
-	j = 0;
-	while (j < sim->number_of_coders)
-	{
-		pthread_mutex_lock(&sim->dongles[j].lock);
-		pthread_cond_broadcast(&sim->dongles[j].cond);
-		pthread_mutex_unlock(&sim->dongles[j].lock);
-		j++;
-	}
+	pthread_mutex_lock(&sim->dlock);
+	pthread_cond_broadcast(&sim->dcond);
+	pthread_mutex_unlock(&sim->dlock);
 }
 
 static int	is_done(t_sim *sim, int i)

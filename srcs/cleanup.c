@@ -27,6 +27,8 @@ void	cleanup_sim(t_sim *sim)
 	}
 	pthread_mutex_destroy(&sim->print_lock);
 	pthread_mutex_destroy(&sim->state_lock);
+	pthread_mutex_destroy(&sim->dlock);
+	pthread_cond_destroy(&sim->dcond);
 	free(sim->dongles);
 	free(sim->coders);
 }

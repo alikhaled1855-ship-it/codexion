@@ -12,90 +12,78 @@
 
 #include "../includes/codexion.h"
 
-static int	wait_for_turn(t_dongle *dongle, t_coder *coder, long key)
+static long	ready_in(t_coder *c)
 {
-	t_sim	*sim;
+	long	now;
+	long	w;
+	long	w2;
 
-	sim = coder->sim;
-	if (dongle->is_available == 0 || dongle->waiting.size > 0)
-	{
-		heap_push(&dongle->waiting, coder, key);
-		while (dongle->is_available == 0
-			|| dongle->waiting.requests[0].coder != coder)
-		{
-			if (is_stop(sim))
-				return (0);
-			pthread_cond_wait(&dongle->cond, &dongle->lock);
-		}
-		heap_pop(&dongle->waiting);
-	}
-	return (1);
+	if (!c->left->is_available || !c->right->is_available
+		|| c->left->waiting.requests[0].coder != c
+		|| c->right->waiting.requests[0].coder != c)
+		return (-1);
+	now = get_current_time_ms() - c->sim->start_time;
+	w = c->sim->dongle_cooldown - (now - c->left->last_release_time);
+	w2 = c->sim->dongle_cooldown - (now - c->right->last_release_time);
+	if (w2 > w)
+		w = w2;
+	if (w < 0)
+		w = 0;
+	return (w);
 }
 
-static int	acquire_one_dongle(t_dongle *dongle, t_coder *coder, long key)
+static void	wait_for(t_sim *sim, long ms)
 {
-	long	elapsed;
-	t_sim	*sim;
+	struct timespec	ts;
+	long			target;
 
-	sim = coder->sim;
-	pthread_mutex_lock(&dongle->lock);
-	if (is_stop(sim) || !wait_for_turn(dongle, coder, key))
+	if (ms < 0)
 	{
-		pthread_mutex_unlock(&dongle->lock);
-		return (0);
+		pthread_cond_wait(&sim->dcond, &sim->dlock);
+		return ;
 	}
-	elapsed = (get_current_time_ms() - sim->start_time)
-		- dongle->last_release_time;
-	dongle->is_available = 0;
-	pthread_mutex_unlock(&dongle->lock);
-	if (elapsed < sim->dongle_cooldown)
-		usleep((sim->dongle_cooldown - elapsed) * 1000);
-	return (1);
+	target = get_current_time_ms() + ms;
+	ts.tv_sec = target / 1000;
+	ts.tv_nsec = (target % 1000) * 1000000;
+	pthread_cond_timedwait(&sim->dcond, &sim->dlock, &ts);
 }
 
-static void	order_dongles(t_coder *coder, t_dongle **first,
-	t_dongle **second, long *key)
+static int	claim(t_coder *coder)
 {
 	t_sim	*sim;
+	long	w;
+	long	key;
 
 	sim = coder->sim;
-	if (coder->left < coder->right)
+	pthread_mutex_lock(&sim->dlock);
+	key = get_key(coder);
+	heap_push(&coder->left->waiting, coder, key);
+	heap_push(&coder->right->waiting, coder, key);
+	w = ready_in(coder);
+	while (w != 0 && !is_stop(sim))
 	{
-		*first = coder->left;
-		*second = coder->right;
+		wait_for(sim, w);
+		w = ready_in(coder);
 	}
-	else
+	if (w == 0)
 	{
-		*first = coder->right;
-		*second = coder->left;
+		heap_pop(&coder->left->waiting);
+		heap_pop(&coder->right->waiting);
+		coder->left->is_available = 0;
+		coder->right->is_available = 0;
 	}
-	if (sim->is_edf)
-		*key = coder->last_compile_start + sim->time_to_burnout;
-	else
-		*key = get_current_time_ms() - sim->start_time;
+	pthread_mutex_unlock(&sim->dlock);
+	return (w == 0);
 }
 
 int	take_dongles(t_coder *coder)
 {
-	t_dongle	*first;
-	t_dongle	*second;
-	t_sim		*sim;
-	long		key;
-
-	sim = coder->sim;
-	order_dongles(coder, &first, &second, &key);
-	if (!acquire_one_dongle(first, coder, key))
+	if (coder->left == coder->right)
+		return (lone_coder(coder));
+	if (!claim(coder))
 		return (0);
-	log_message(sim, coder->number, "has taken a dongle");
-	if (!acquire_one_dongle(second, coder, key))
-	{
-		pthread_mutex_lock(&first->lock);
-		first->is_available = 1;
-		pthread_cond_broadcast(&first->cond);
-		pthread_mutex_unlock(&first->lock);
-		return (0);
-	}
-	log_message(sim, coder->number, "has taken a dongle");
+	log_message(coder->sim, coder->number, "has taken a dongle");
+	log_message(coder->sim, coder->number, "has taken a dongle");
 	return (1);
 }
 
@@ -104,14 +92,11 @@ void	release_dongles(t_coder *coder)
 	long	now;
 
 	now = get_current_time_ms() - coder->sim->start_time;
-	pthread_mutex_lock(&coder->left->lock);
+	pthread_mutex_lock(&coder->sim->dlock);
 	coder->left->is_available = 1;
 	coder->left->last_release_time = now;
-	pthread_cond_broadcast(&coder->left->cond);
-	pthread_mutex_unlock(&coder->left->lock);
-	pthread_mutex_lock(&coder->right->lock);
 	coder->right->is_available = 1;
 	coder->right->last_release_time = now;
-	pthread_cond_broadcast(&coder->right->cond);
-	pthread_mutex_unlock(&coder->right->lock);
+	pthread_cond_broadcast(&coder->sim->dcond);
+	pthread_mutex_unlock(&coder->sim->dlock);
 }

@@ -78,5 +78,7 @@ int	init_sim(t_sim *sim, char **argv)
 	sim->start_time = get_current_time_ms();
 	pthread_mutex_init(&sim->print_lock, NULL);
 	pthread_mutex_init(&sim->state_lock, NULL);
+	pthread_mutex_init(&sim->dlock, NULL);
+	pthread_cond_init(&sim->dcond, NULL);
 	return (0);
 }

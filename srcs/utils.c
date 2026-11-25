@@ -34,3 +34,10 @@ int	is_stop(t_sim *sim)
 		return (0);
 	}
 }
+
+long	get_key(t_coder *coder)
+{
+	if (coder->sim->is_edf)
+		return (coder->last_compile_start + coder->sim->time_to_burnout);
+	return (get_current_time_ms() - coder->sim->start_time);
+}
