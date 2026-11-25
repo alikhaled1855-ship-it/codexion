@@ -37,16 +37,21 @@ time_to_refactor number_of_compiles_required dongle_cooldown scheduler
 
 All arguments are mandatory.
 
-- All numeric arguments must be positive integers.
+- All numeric arguments must be positive integers (greater than 0 and not larger than `INT_MAX`).
 - All time values are expressed in milliseconds.
 - `number_of_coders` and `number_of_compiles_required` represent counts.
 - `scheduler` must be exactly `fifo` or `edf`.
+- If an argument is invalid, the program prints `Error` and exits with code 1.
 
 ### Example
 
 ```bash
-./codexion 5 800 200 100 150 3 100 fifo
+./codexion 5 2000 200 100 100 3 50 fifo
 ```
+
+All 5 coders finish their 3 compiles and the program stops normally.
+
+With a burnout time that is too short, for example `./codexion 5 800 200 100 150 3 100 fifo`, a coder burns out and the simulation stops. This is the expected behavior.
 
 ### Makefile rules
 
@@ -73,10 +78,8 @@ Dongle access is managed using a custom min-heap for each dongle.
 
 Requests are ordered according to the selected scheduling policy:
 
-- **FIFO:** Requests are served in arrival order.
-- **EDF:** Requests are ordered by their burnout deadlines.
-
-A deterministic tie-breaker is used when deadlines are equal.
+- **FIFO:** Requests are served in arrival order (the key is the time of the request).
+- **EDF:** Requests are ordered by their burnout deadlines (the key is the time of the last compile start plus the burnout time).
 
 The scheduling mechanism is designed to provide fair access and prevent starvation under feasible simulation parameters.
 
@@ -102,6 +105,10 @@ All output is handled by a single mutex-protected logging function.
 
 The print mutex ensures that messages from different threads do not get mixed together.
 
+The timestamp is read after the print mutex is locked, so the timestamps in the output never go backwards.
+
+Once the simulation has stopped, no more messages are printed.
+
 ## Thread synchronization mechanisms
 
 ### pthread_mutex_t
@@ -111,8 +118,9 @@ Mutexes protect shared resources and prevent multiple threads from modifying the
 Codexion uses mutexes to protect:
 
 - Each dongle's availability, cooldown information, and waiting heap.
+- Each coder's compile counter and last compile time.
 - The logging output.
-- Shared simulation state.
+- Shared simulation state (the `stop` flag).
 
 This prevents race conditions, such as two coders acquiring the same dongle simultaneously.
 
@@ -120,7 +128,7 @@ This prevents race conditions, such as two coders acquiring the same dongle simu
 
 Condition variables allow coder threads to wait for dongles without continuously checking their availability.
 
-When a coder requests a dongle, it joins the dongle's waiting heap and waits using `pthread_cond_wait`.
+When a coder requests a dongle that is not free, or when other coders are already waiting for it, the coder joins the dongle's waiting heap and waits using `pthread_cond_wait`. If the dongle is free and nobody is waiting, the coder takes it directly.
 
 When a dongle is released, `pthread_cond_broadcast` wakes the waiting threads.
 
@@ -152,7 +160,7 @@ Condition-variable signaling is used to coordinate waiting threads and notify th
 
 ### AI usage
 
-Claude (Anthropic) was used throughout the project as a learning tool, not as a code generator.
+Claude (Anthropic) was used throughout the project as a learning tool.
 
 It helped explain important concepts before implementation, including:
 
@@ -167,3 +175,8 @@ AI also helped guide the incremental implementation of the project. The author w
 During stress testing, AI helped identify and fix a race condition related to cooldown handling, where a lock was briefly released at the wrong point.
 
 It was also used to identify Norminette violations and help restructure functions to comply with the 42 Norm.
+
+In a final review, AI helped test the finished program (leak checks, data race checks, and stress tests with many different inputs). This review found two bugs, and AI provided the code for both fixes, which the author applied:
+
+- Log timestamps could be printed out of order, because the time was read before the print mutex was locked.
+- Argument validation accepted `0` and numbers too large for an `int`.

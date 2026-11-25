@@ -16,13 +16,13 @@ void	log_message(t_sim *sim, int coder_number, char *message)
 {
 	long	elapsed;
 
-	elapsed = get_current_time_ms() - sim->start_time;
 	pthread_mutex_lock(&sim->print_lock);
 	if (is_stop(sim) == 1)
 	{
 		pthread_mutex_unlock(&sim->print_lock);
 		return ;
 	}
+	elapsed = get_current_time_ms() - sim->start_time;
 	printf("%ld %d %s\n", elapsed, coder_number, message);
 	pthread_mutex_unlock(&sim->print_lock);
 }

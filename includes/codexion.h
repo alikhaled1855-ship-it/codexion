@@ -20,6 +20,7 @@
 # include <string.h>
 # include <unistd.h>
 # include <stdio.h>
+# include <limits.h>
 
 typedef struct s_coder	t_coder;
 
