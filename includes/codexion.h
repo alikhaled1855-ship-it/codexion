@@ -6,7 +6,7 @@
 /*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/29 15:51:51 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/18 18:11:02 by alikhaled18      ###   ########.fr       */
+/*   Updated: 2026/11/25 03:50:17 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,12 @@
 # define CODEXION_H
 
 # include <pthread.h>
+#include <stddef.h>
+#include <sys/time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
 
 typedef struct s_coder	t_coder;
 
@@ -49,6 +55,7 @@ typedef struct s_coder
 	long				last_compile_start;
 	int					compiles_done;
 	pthread_t			thread;
+	pthread_mutex_t		time_lock;
 	t_sim				*sim;
 }						t_coder;
 
@@ -64,10 +71,11 @@ typedef struct s_sim
 	int					is_edf;
 	long				start_time;
 	int					stop;
-	pthread_mutex_t		print_lock;
 	t_coder				*coders;
 	t_dongle			*dongles;
 	pthread_t			monitor_thread;
+	pthread_mutex_t		print_lock;
+	pthread_mutex_t		state_lock;
 }						t_sim;
 
 int						is_positive_number(char *str);
@@ -84,5 +92,6 @@ int						heap_init(t_heap *heap, int capacity);
 void					heap_push(t_heap *heap, t_coder *coder, long key);
 t_coder					*heap_pop(t_heap *heap);
 void					*monitor_routine(void *arg);
+int						is_stop(t_sim *sim);
 
 #endif

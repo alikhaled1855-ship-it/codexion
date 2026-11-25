@@ -6,32 +6,31 @@
 /*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:39:36 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/23 07:42:52 by alikhaled18      ###   ########.fr       */
+/*   Updated: 2026/11/25 04:57:11 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/codexion.h"
-#include <unistd.h>
 
-static int	wait_for_turn(t_dongle *dongle, t_coder *coder, long key)	// change its name
+static int	wait_for_turn(t_dongle *dongle, t_coder *coder, long key)
 {
 	t_sim	*sim;
 
 	sim = coder->sim;
-	if (dongle->is_available == 0 || dongle->waiting.size > 0)	//think first condition enough
+	if (dongle->is_available == 0 || dongle->waiting.size > 0)
 	{
 		heap_push(&dongle->waiting, coder, key);
 		while (dongle->is_available == 0
 			|| dongle->waiting.requests[0].coder != coder)
 		{
-			if (sim->stop)
+			if (is_stop(sim))
 				return (0);
 			pthread_cond_wait(&dongle->cond, &dongle->lock);
 		}
 		heap_pop(&dongle->waiting);
 	}
 	return (1);
-}	 // this function to make sure that the other coder which can take the same dongle is ok
+}
 
 static int	acquire_one_dongle(t_dongle *dongle, t_coder *coder, long key)
 {
@@ -40,7 +39,7 @@ static int	acquire_one_dongle(t_dongle *dongle, t_coder *coder, long key)
 
 	sim = coder->sim;
 	pthread_mutex_lock(&dongle->lock);
-	if (sim->stop || !wait_for_turn(dongle, coder, key))		// stop here may make an error
+	if (is_stop(sim) || !wait_for_turn(dongle, coder, key))
 	{
 		pthread_mutex_unlock(&dongle->lock);
 		return (0);
@@ -48,14 +47,17 @@ static int	acquire_one_dongle(t_dongle *dongle, t_coder *coder, long key)
 	elapsed = (get_current_time_ms() - sim->start_time)
 		- dongle->last_release_time;
 	if (elapsed < sim->dongle_cooldown)
-		usleep((sim->dongle_cooldown - elapsed) * 1000);	// why not inside wait function
+		usleep((sim->dongle_cooldown - elapsed) * 1000);
 	dongle->is_available = 0;
 	pthread_mutex_unlock(&dongle->lock);
 	return (1);
-}	// I have to check from the waiting list and the cooldown, wait is for waiting list
+}
 
-static void	order_dongles(t_coder *coder, t_dongle **first, t_dongle **second)
+static void	order_dongles(t_coder *coder, t_dongle **first, t_dongle **second, long *key)
 {
+	t_sim *sim;
+
+	sim = coder->sim;	
 	if (coder->left < coder->right)
 	{
 		*first = coder->left;
@@ -66,6 +68,10 @@ static void	order_dongles(t_coder *coder, t_dongle **first, t_dongle **second)
 		*first = coder->right;
 		*second = coder->left;
 	}
+	if (sim->is_edf)
+		*key = coder->last_compile_start + sim->time_to_burnout;
+	else
+		*key = get_current_time_ms() - sim->start_time;
 }
 
 int	take_dongles(t_coder *coder)
@@ -76,13 +82,10 @@ int	take_dongles(t_coder *coder)
 	long		key;
 
 	sim = coder->sim;
-	if (sim->is_edf)
-		key = coder->last_compile_start + sim->time_to_burnout;
-	else
-		key = get_current_time_ms() - sim->start_time;		// why is here? (keys init)
-	order_dongles(coder, &first, &second);
+	order_dongles(coder, &first, &second, &key);
 	if (!acquire_one_dongle(first, coder, key))
 		return (0);
+	log_message(sim, coder->number, "has taken a dongle");
 	if (!acquire_one_dongle(second, coder, key))
 	{
 		pthread_mutex_lock(&first->lock);
@@ -91,14 +94,15 @@ int	take_dongles(t_coder *coder)
 		pthread_mutex_unlock(&first->lock);
 		return (0);
 	}
+	log_message(sim, coder->number, "has taken a dongle");
 	return (1);
-}		// I need to print x has taken a dongel
+}
 
 void	release_dongles(t_coder *coder)
 {
 	long	now;
 
-	now = get_current_time_ms() - coder->sim->start_time; // May can I make another function for time now
+	now = get_current_time_ms() - coder->sim->start_time;
 	pthread_mutex_lock(&coder->left->lock);
 	coder->left->is_available = 1;
 	coder->left->last_release_time = now;

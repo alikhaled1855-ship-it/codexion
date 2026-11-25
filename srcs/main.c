@@ -6,12 +6,11 @@
 /*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:40:12 by nahas             #+#    #+#             */
-/*   Updated: 2026/11/21 07:57:30 by alikhaled18      ###   ########.fr       */
+/*   Updated: 2026/11/25 03:50:12 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/codexion.h"
-#include <stdio.h>
 
 static void	start_threads(t_sim *sim)
 {
@@ -37,7 +36,7 @@ static void	join_coders(t_sim *sim)
 		pthread_join(sim->coders[i].thread, NULL);
 		i++;
 	}
-}		// we need onitor thread here
+}
 
 int	main(int argc, char **argv)
 {

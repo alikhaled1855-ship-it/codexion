@@ -3,15 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   heap.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: nahas <nahas@student.42.fr>                +#+  +:+       +#+        */
+/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:39:43 by nahas             #+#    #+#             */
-/*   Updated: 2026/09/01 22:43:59 by nahas            ###   ########.fr       */
+/*   Updated: 2026/11/25 03:50:57 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/codexion.h"
-#include <stdlib.h>
 
 int	heap_init(t_heap *heap, int capacity)
 {

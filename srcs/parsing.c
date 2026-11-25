@@ -3,16 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   parsing.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: nahas <nahas@student.42.fr>                +#+  +:+       +#+        */
+/*   By: alikhaled1855gmail.com <alikhaled1855gm    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 22:40:51 by nahas             #+#    #+#             */
-/*   Updated: 2026/09/10 15:29:19 by nahas            ###   ########.fr       */
+/*   Updated: 2026/11/25 03:51:26 by alikhaled18      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/codexion.h"
-#include <stdio.h>
-#include <string.h>
 
 int	is_positive_number(char *str)
 {
