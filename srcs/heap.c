@@ -19,7 +19,15 @@ int	heap_init(t_heap *heap, int capacity)
 		return (1);
 	heap->size = 0;
 	heap->capacity = capacity;
+	heap->next_seq = 0;
 	return (0);
+}
+
+static int	is_before(t_request *a, t_request *b)
+{
+	if (a->key != b->key)
+		return (a->key < b->key);
+	return (a->seq < b->seq);
 }
 
 void	heap_push(t_heap *heap, t_coder *coder, long key)
@@ -30,12 +38,14 @@ void	heap_push(t_heap *heap, t_coder *coder, long key)
 
 	heap->requests[heap->size].coder = coder;
 	heap->requests[heap->size].key = key;
+	heap->requests[heap->size].seq = heap->next_seq;
+	heap->next_seq++;
 	child = heap->size;
 	heap->size++;
 	while (child > 0)
 	{
 		parent = (child - 1) / 2;
-		if (heap->requests[parent].key <= heap->requests[child].key)
+		if (!is_before(&heap->requests[child], &heap->requests[parent]))
 			break ;
 		temp = heap->requests[parent];
 		heap->requests[parent] = heap->requests[child];
@@ -54,10 +64,10 @@ static int	get_smallest(t_heap *heap, int parent)
 	right = (2 * parent) + 2;
 	smallest = parent;
 	if (left < heap->size
-		&& heap->requests[left].key < heap->requests[smallest].key)
+		&& is_before(&heap->requests[left], &heap->requests[smallest]))
 		smallest = left;
 	if (right < heap->size
-		&& heap->requests[right].key < heap->requests[smallest].key)
+		&& is_before(&heap->requests[right], &heap->requests[smallest]))
 		smallest = right;
 	return (smallest);
 }

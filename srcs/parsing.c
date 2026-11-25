@@ -12,7 +12,7 @@
 
 #include "../includes/codexion.h"
 
-int	is_positive_number(char *str)
+int	is_number(char *str, long min)
 {
 	int		i;
 	long	value;
@@ -30,7 +30,7 @@ int	is_positive_number(char *str)
 			return (0);
 		i++;
 	}
-	return (value > 0);
+	return (value >= min);
 }
 
 int	validate_args(int argc, char **argv)
@@ -43,9 +43,9 @@ int	validate_args(int argc, char **argv)
 		return (1);
 	}
 	i = 1;
-	while (i <= 6)
+	while (i <= 7)
 	{
-		if (!is_positive_number(argv[i]))
+		if (!is_number(argv[i], i != 7))
 		{
 			printf("Error\n");
 			return (1);

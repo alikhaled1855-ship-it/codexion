@@ -28,6 +28,7 @@ typedef struct s_request
 {
 	t_coder				*coder;
 	long				key;
+	long				seq;
 }						t_request;
 
 typedef struct s_heap
@@ -35,6 +36,7 @@ typedef struct s_heap
 	t_request			*requests;
 	int					size;
 	int					capacity;
+	long				next_seq;
 }						t_heap;
 
 typedef struct s_dongle
@@ -79,7 +81,7 @@ typedef struct s_sim
 	pthread_mutex_t		state_lock;
 }						t_sim;
 
-int						is_positive_number(char *str);
+int						is_number(char *str, long min);
 int						validate_args(int argc, char **argv);
 int						init_sim(t_sim *sim, char **argv);
 long					get_current_time_ms(void);
