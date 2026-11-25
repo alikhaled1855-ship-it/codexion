@@ -37,7 +37,7 @@ time_to_refactor number_of_compiles_required dongle_cooldown scheduler
 
 All arguments are mandatory.
 
-- All numeric arguments must be positive integers (greater than 0 and not larger than `INT_MAX`).
+- All numeric arguments must be non-negative integers not larger than `INT_MAX`. Every argument must be at least 1, except `dongle_cooldown`, which may be 0.
 - All time values are expressed in milliseconds.
 - `number_of_coders` and `number_of_compiles_required` represent counts.
 - `scheduler` must be exactly `fifo` or `edf`.
@@ -66,11 +66,10 @@ make re
 
 ### Deadlock prevention (Coffman's conditions)
 
-Each coder needs two dongles simultaneously. This creates the possibility of circular-wait deadlock.
+Each coder needs two dongles simultaneously, which could create a circular wait.
 
-Codexion prevents this by acquiring dongles in a fixed order based on their memory addresses, rather than their left/right positions.
+Codexion removes hold-and-wait: a coder never holds one dongle while waiting for the other. It claims both dongles in a single step, under one shared mutex (`dlock`), and only when both are free, both cooldowns have passed, and no higher-priority waiter sharing a dongle could start right now.
 
-Using the same acquisition order prevents circular wait between coders.
 
 ### Starvation prevention
 
@@ -87,9 +86,8 @@ The scheduling mechanism is designed to provide fair access and prevent starvati
 
 Each dongle records its last release time.
 
-After a dongle is released, it remains unavailable until its cooldown period has elapsed.
+A coder starts only when both of its dongles have been released for at least `dongle_cooldown` ms. While waiting, it sleeps with `pthread_cond_timedwait` until the cooldown expires, or until it is woken by a release or by the stop signal.
 
-A coder must wait until the cooldown expires before acquiring that dongle.
 
 ### Precise burnout detection
 
@@ -117,7 +115,7 @@ Mutexes protect shared resources and prevent multiple threads from modifying the
 
 Codexion uses mutexes to protect:
 
-- Each dongle's availability, cooldown information, and waiting heap.
+- All dongle state (availability, cooldown information, waiting heaps) through one shared mutex, `dlock`.
 - Each coder's compile counter and last compile time.
 - The logging output.
 - Shared simulation state (the `stop` flag).
@@ -126,21 +124,16 @@ This prevents race conditions, such as two coders acquiring the same dongle simu
 
 ### pthread_cond_t
 
-Condition variables allow coder threads to wait for dongles without continuously checking their availability.
+One condition variable (`dcond`), paired with `dlock`, lets coder threads wait for dongles without busy-waiting.
 
-When a coder requests a dongle that is not free, or when other coders are already waiting for it, the coder joins the dongle's waiting heap and waits using `pthread_cond_wait`. If the dongle is free and nobody is waiting, the coder takes it directly.
+A coder pushes a request into the waiting heap of each of its two dongles, then waits on `dcond` (with a timeout while a cooldown is pending). Whenever dongles are released, `pthread_cond_broadcast` wakes the waiting coders. Each one re-checks its conditions inside a `while` loop, which also handles spurious wakeups.
 
-When a dongle is released, `pthread_cond_broadcast` wakes the waiting threads.
-
-Each awakened thread checks again whether the dongle is available and whether its request has priority in the heap before proceeding.
-
-The checks are performed inside a `while` loop to handle spurious wakeups and ensure correct synchronization.
 
 ### Thread communication and event signaling
 
 The monitor thread communicates simulation termination through the shared `stop` flag.
 
-When burnout is detected, the monitor updates the simulation state and broadcasts on the dongles' condition variables.
+When burnout is detected, the monitor updates the simulation state and broadcasts on the shared condition variable (`dcond`).
 
 This wakes sleeping coder threads so they can check the termination state and exit cleanly.
 
@@ -180,3 +173,5 @@ In a final review, AI helped test the finished program (leak checks, data race c
 
 - Log timestamps could be printed out of order, because the time was read before the print mutex was locked.
 - Argument validation accepted `0` and numbers too large for an `int`.
+
+AI also helped diagnose a convoy problem under large cooldowns (coders holding one dongle while waiting for the other), which led to the single-lock design where a coder claims both dongles at once. The author applied, tested and verified this change.

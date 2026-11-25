@@ -23,7 +23,7 @@ int	heap_init(t_heap *heap, int capacity)
 	return (0);
 }
 
-static int	is_before(t_request *a, t_request *b)
+int	is_before(t_request *a, t_request *b)
 {
 	if (a->key != b->key)
 		return (a->key < b->key);

@@ -98,6 +98,9 @@ void					heap_push(t_heap *heap, t_coder *coder, long key);
 t_coder					*heap_pop(t_heap *heap);
 void					*monitor_routine(void *arg);
 int						is_stop(t_sim *sim);
+int						is_before(t_request *a, t_request *b);
+void					heap_remove(t_heap *h, t_coder *coder);
+int						has_rival(t_dongle *d, t_coder *me);
 long					get_key(t_coder *coder);
 int						lone_coder(t_coder *coder);
 

@@ -19,8 +19,7 @@ static long	ready_in(t_coder *c)
 	long	w2;
 
 	if (!c->left->is_available || !c->right->is_available
-		|| c->left->waiting.requests[0].coder != c
-		|| c->right->waiting.requests[0].coder != c)
+		|| has_rival(c->left, c) || has_rival(c->right, c))
 		return (-1);
 	now = get_current_time_ms() - c->sim->start_time;
 	w = c->sim->dongle_cooldown - (now - c->left->last_release_time);
@@ -67,8 +66,8 @@ static int	claim(t_coder *coder)
 	}
 	if (w == 0)
 	{
-		heap_pop(&coder->left->waiting);
-		heap_pop(&coder->right->waiting);
+		heap_remove(&coder->left->waiting, coder);
+		heap_remove(&coder->right->waiting, coder);
 		coder->left->is_available = 0;
 		coder->right->is_available = 0;
 	}
